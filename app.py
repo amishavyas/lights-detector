@@ -11,7 +11,7 @@ from aurora_data import (
     get_proton_density,
 )
 
-from alerts import (monitor_aurora, test_monitor_aurora)
+from alerts import monitor_aurora 
 
 app = Flask(__name__, static_folder="static")
 
