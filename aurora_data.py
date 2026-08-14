@@ -24,9 +24,26 @@ def _get_text(url):
 def get_bz():
     """Return the most recent valid Bz value in nT."""
     data = _get_json(MAG_URL)
-
     for row in reversed(data):
         value = row.get("bz_gsm")
+
+        if value is None:
+            continue
+
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            continue
+
+    return None
+
+
+def get_bt():
+    """Return the most recent valid total IMF strength (Bt) in nT."""
+    data = _get_json(MAG_URL)
+
+    for row in reversed(data):
+        value = row.get("bt")
 
         if value is None:
             continue
@@ -74,6 +91,7 @@ def get_proton_density():
                 continue
 
     return None
+
 
 def get_hemispheric_power(hemisphere="north"):
     """Return the latest northern or southern hemispheric power in GW."""
