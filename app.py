@@ -2,7 +2,7 @@ import os
 
 from flask import Flask, jsonify, render_template
 import requests
-
+from threading import Thread
 from aurora_data import (
     get_hemispheric_power,
     get_bz,
@@ -11,6 +11,7 @@ from aurora_data import (
     get_proton_density,
 )
 
+from alerts import (monitor_aurora, test_monitor_aurora)
 
 app = Flask(__name__, static_folder="static")
 
@@ -18,22 +19,6 @@ NTFY_TOPIC = "WEE_WOO"
 NTFY_URL = f"https://ntfy.sh/{NTFY_TOPIC}"
 
 
-def send_alarm():
-    # with open("marmot.jpeg", "rb") as image:
-    response = requests.put(
-        NTFY_URL,
-        # data=image,
-        headers={
-            "Title": "GO MARMOT MODE",
-            "Priority": "5",
-            "Tags": "rotating_light",
-            # "Filename": "marmot.jpeg",
-            "Message": "Northern lights alarm test!",
-        },
-        timeout=30,
-    )
-
-    response.raise_for_status()
 
 
 @app.route("/")
@@ -90,4 +75,15 @@ def aurora_status():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5001)
+    alert_thread = Thread(
+        target=test_monitor_aurora,
+        daemon=True,
+    )
+
+    alert_thread.start()
+
+    app.run(
+        debug=True,
+        port=5001,
+        use_reloader=False,
+    )
