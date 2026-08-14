@@ -6,6 +6,7 @@ import requests
 from aurora_data import (
     get_hemispheric_power,
     get_bz,
+    get_bt,
     get_solar_wind_speed,
     get_proton_density,
 )
@@ -21,7 +22,7 @@ def send_alarm():
     # with open("marmot.jpeg", "rb") as image:
     response = requests.put(
         NTFY_URL,
-        data=image,
+        # data=image,
         headers={
             "Title": "GO MARMOT MODE",
             "Priority": "5",
