@@ -19,8 +19,6 @@ NTFY_TOPIC = "WEE_WOO"
 NTFY_URL = f"https://ntfy.sh/{NTFY_TOPIC}"
 
 
-
-
 @app.route("/")
 def index():
     boosts_folder = os.path.join(app.static_folder, "boosts")
@@ -75,15 +73,10 @@ def aurora_status():
 
 
 if __name__ == "__main__":
-    alert_thread = Thread(
-        target=test_monitor_aurora,
-        daemon=True,
-    )
-
-    alert_thread.start()
-
+    port = int(os.environ.get("PORT", 5001))
     app.run(
-        debug=True,
-        port=5001,
+        host="0.0.0.0",
+        port=port,
+        debug=False,
         use_reloader=False,
     )
