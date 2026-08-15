@@ -16,7 +16,7 @@ HP_HIGH_THRESHOLD = 50
 
 
 last_alert_times = {
-    40: None,
+    20: None,
     50: None,
 }
 
