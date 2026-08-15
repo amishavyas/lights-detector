@@ -11,12 +11,12 @@ NTFY_URL = f"https://ntfy.sh/{NTFY_TOPIC}"
 CHECK_INTERVAL_SECONDS = 60 * 5
 ALERT_COOLDOWN_SECONDS = 60 * 60 * 2  # 2 hours
 
-HP_WARNING_THRESHOLD = 20
+HP_WARNING_THRESHOLD = 40
 HP_HIGH_THRESHOLD = 50
 
 
 last_alert_times = {
-    20: None,
+    40: None,
     50: None,
 }
 
