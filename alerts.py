@@ -1,12 +1,24 @@
 import time
+import requests
+
 from analyze_aurora import hemispheric_power_above_threshold
 
+NTFY_TOPIC = "WEE_WOO"
+NTFY_URL = f"https://ntfy.sh/{NTFY_TOPIC}"
 
+
+# Monitoring
 CHECK_INTERVAL_SECONDS = 60 * 5
-HP_ALERT_THRESHOLD = 50
 ALERT_COOLDOWN_SECONDS = 60 * 60 * 2  # 2 hours
 
-last_alert_time = None
+HP_WARNING_THRESHOLD = 40
+HP_HIGH_THRESHOLD = 50
+
+
+last_alert_times = {
+    40: None,
+    50: None,
+}
 
 
 def send_alarm(
@@ -33,43 +45,65 @@ def send_alarm(
     response.raise_for_status()
 
 
+def cooldown_expired(threshold, now):
+    last_alert = last_alert_times[threshold]
+
+    return (
+        last_alert is None
+        or now - last_alert >= ALERT_COOLDOWN_SECONDS
+    )
+
+
 def monitor_aurora():
     """
-    Continuously monitor aurora conditions.
+    Continuously monitor hemispheric power.
 
-    Hemispheric power is checked every five minutes.
-    An alert is sent when HP exceeds the specified threshold
-    and the alert cooldown has expired.
+    Alert levels:
+      >= 40 GW: elevated aurora activity
+      >= 50 GW: strong aurora activity
+
+    Each alert level has its own 2-hour cooldown.
     """
 
-    last_alert_time = None
-
     while True:
-        hp, hp_status = hemispheric_power_above_threshold(
-            HP_ALERT_THRESHOLD
+        hp, _ = hemispheric_power_above_threshold(
+            HP_WARNING_THRESHOLD
         )
 
         now = time.time()
 
-        print(
-            f"HP ({hp}) is above {HP_ALERT_THRESHOLD} GW: "
-            f"{hp_status}"
-        )
+        print(f"Hemispheric Power: {hp} GW")
 
-        if hp_status:
-            cooldown_expired = (
-                last_alert_time is None
-                or now - last_alert_time >= ALERT_COOLDOWN_SECONDS
-            )
+        # Strong alert
+        if hp >= HP_HIGH_THRESHOLD:
 
-            if cooldown_expired:
+            if cooldown_expired(HP_HIGH_THRESHOLD, now):
                 send_alarm(
+                    title="STRONG AURORA ACTIVITY",
                     message=(
-                        f"Hemispheric power is above "
-                        f"{HP_ALERT_THRESHOLD} GW!"
-                    )
+                        f"Hemispheric Power has reached "
+                        f"{hp} GW (≥ {HP_HIGH_THRESHOLD} GW)."
+                    ),
+                    priority=5,
+                    tags="rotating_light",
                 )
 
-                last_alert_time = now
+                last_alert_times[HP_HIGH_THRESHOLD] = now
+
+        # Elevated alert
+        elif hp >= HP_WARNING_THRESHOLD:
+
+            if cooldown_expired(HP_WARNING_THRESHOLD, now):
+                send_alarm(
+                    title="AURORA ACTIVITY ELEVATED",
+                    message=(
+                        f"Hemispheric Power has reached "
+                        f"{hp} GW (≥ {HP_WARNING_THRESHOLD} GW)."
+                    ),
+                    priority=5,
+                    tags="rotating_light",
+                )
+
+                last_alert_times[HP_WARNING_THRESHOLD] = now
 
         time.sleep(CHECK_INTERVAL_SECONDS)
