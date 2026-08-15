@@ -27,17 +27,13 @@ def send_alarm(
     priority=5,
     tags="rotating_light",
 ):
-    """
-    Send a Northern Lights alert through ntfy.
-    """
-
     response = requests.put(
         NTFY_URL,
+        data=message.encode("utf-8"),
         headers={
             "Title": title,
             "Priority": str(priority),
             "Tags": tags,
-            "Message": message,
         },
         timeout=30,
     )
