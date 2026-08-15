@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GOES-19 Magnetometer</title>
+
+    <script src="https://cdn.plot.ly/plotly-3.1.0.min.js"></script>
+
+    <style>
+      :root {
+        --comic-yellow: #fff200;
+        --comic-purple: #8a00ff;
+        --comic-pink: #ff2d95;
+        --comic-cyan: #38efff;
+        --comic-orange: #ff7a00;
+        --comic-green: #63ff72;
+        --comic-ink: #07000d;
+        --comic-panel: #160025;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: var(--comic-ink);
+        color: #f5f5f5;
+        font-family: "Courier New", monospace;
+      }
+
+      .magnetometer-widget {
+        width: 100%;
+        box-sizing: border-box;
+        background: var(--comic-panel);
+        padding: 12px;
+      }
+
+      .magnetometer-title {
+        margin: 0 0 12px;
+        font-family: "Comic Sans MS", cursive;
+        font-size: clamp(16px, 2.2vw, 20px);
+        font-weight: 900;
+        text-align: center;
+        color: var(--comic-yellow);
+        text-shadow: 2px 2px 0 var(--comic-purple), 3px 3px 0 var(--comic-ink);
+      }
+
+      #goes-magnetometer {
+        width: 100%;
+        height: 500px;
+      }
+
+      .magnetometer-status {
+        margin-top: 10px;
+        font-family: "Courier New", monospace;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-align: center;
+        color: var(--comic-cyan);
+        opacity: 0.9;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="magnetometer-widget">
+      <div class="magnetometer-title">Last 24 Hours</div>
+
+      <div id="goes-magnetometer"></div>
+
+      <div id="magnetometer-status" class="magnetometer-status">
+        Loading GOES-19 magnetometer data...
+      </div>
+    </div>
+
+    <script>
+      const NOAA_BASE = "https://services.swpc.noaa.gov/json/goes";
+
+      // GOES-19 may be assigned to NOAA's primary or secondary stream.
+      // We request both and then explicitly keep only satellite 19.
+      const MAG_URLS = [
+        `${NOAA_BASE}/primary/magnetometers-1-day.json`,
+        `${NOAA_BASE}/secondary/magnetometers-1-day.json`,
+      ];
+
+      async function fetchJson(url) {
+        const response = await fetch(url + "?t=" + Date.now(), {
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          throw new Error(`${url}: HTTP ${response.status}`);
+        }
+
+        return response.json();
+      }
+
+      async function updateMagnetometer() {
+        const status = document.getElementById("magnetometer-status");
+
+        try {
+          status.textContent = "Loading latest GOES-19 data from NOAA...";
+
+          const results = await Promise.allSettled(MAG_URLS.map(fetchJson));
+
+          const rows = [];
+
+          for (const result of results) {
+            if (result.status === "fulfilled" && Array.isArray(result.value)) {
+              rows.push(...result.value);
+            }
+          }
+
+          if (!rows.length) {
+            throw new Error(
+              "NOAA primary and secondary feeds were unavailable."
+            );
+          }
+
+          // Explicitly select GOES-19.
+          const goes19Rows = rows
+            .filter((row) => Number(row.satellite) === 19)
+            .map((row) => {
+              // NOAA feeds have historically used both hp and Hp forms,
+              // so accept either.
+              const hpRaw = row.hp ?? row.Hp;
+
+              return {
+                time: row.time_tag,
+                hp: Number(hpRaw),
+              };
+            })
+            .filter(
+              (row) => row.time && Number.isFinite(row.hp) && row.hp > -90000
+            )
+            .sort((a, b) => new Date(a.time) - new Date(b.time));
+
+          // Deduplicate timestamps in case the same observation appears
+          // in both feeds during a NOAA source handoff.
+          const byTime = new Map();
+
+          for (const row of goes19Rows) {
+            byTime.set(row.time, row.hp);
+          }
+
+          const observations = Array.from(byTime, ([time, hp]) => ({
+            time,
+            hp,
+          })).sort((a, b) => new Date(a.time) - new Date(b.time));
+
+          if (!observations.length) {
+            throw new Error(
+              "No GOES-19 Hp measurements were found in NOAA's current primary or secondary feed."
+            );
+          }
+
+          const time = observations.map((row) => row.time);
+
+          const hp = observations.map((row) => row.hp);
+
+          const trace = {
+            x: time,
+            y: hp,
+            type: "scatter",
+            mode: "lines",
+            name: "GOES-19 Hp",
+            line: {
+              width: 2.5,
+              color: "#38efff",
+            },
+            hovertemplate:
+              "<b>GOES-19</b><br>" +
+              "%{x}<br>" +
+              "Hp: %{y:.1f} nT" +
+              "<extra></extra>",
+          };
+
+          const layout = {
+            autosize: true,
+
+            margin: {
+              l: 65,
+              r: 20,
+              t: 20,
+              b: 55,
+            },
+
+            paper_bgcolor: "rgba(0,0,0,0)",
+            plot_bgcolor: "rgba(0,0,0,0)",
+
+            font: {
+              family: "Courier New, monospace",
+              color: "#f5f5f5",
+            },
+
+            xaxis: {
+              title: "UTC",
+              type: "date",
+              showgrid: true,
+              gridcolor: "rgba(56,239,255,0.15)",
+              zeroline: false,
+              linecolor: "#38efff",
+              tickfont: { color: "#7fffff", size: 16 },
+            },
+
+            yaxis: {
+              title: "Hp (nT)",
+              showgrid: true,
+              gridcolor: "rgba(255,45,149,0.15)",
+              zeroline: false,
+              linecolor: "#ff2d95",
+              tickfont: { color: "#ff8cff", size: 16 },
+            },
+
+            hovermode: "x unified",
+            hoverlabel: {
+              bgcolor: "#160025",
+              bordercolor: "#38efff",
+              font: {
+                family: "Courier New, monospace",
+                color: "#fff200",
+                size: 16,
+              },
+            },
+
+            showlegend: false,
+          };
+
+          const config = {
+            responsive: true,
+            displaylogo: false,
+            scrollZoom: true,
+          };
+
+          await Plotly.react("goes-magnetometer", [trace], layout, config);
+
+          const latest = new Date(time[time.length - 1]);
+
+          status.textContent =
+            "GOES-19 • Latest observation: " +
+            latest.toLocaleString() +
+            " • Auto-refreshes every 5 minutes";
+        } catch (error) {
+          console.error("GOES-19 magnetometer error:", error);
+
+          status.textContent =
+            "Unable to find current GOES-19 magnetometer data: " +
+            error.message;
+        }
+      }
+
+      updateMagnetometer();
+
+      setInterval(updateMagnetometer, 5 * 60 * 1000);
+    </script>
+  </body>
+</html>
