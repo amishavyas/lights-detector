@@ -22,7 +22,7 @@ def _get_text(url):
 
 
 def get_bz():
-    """Return the most recent valid Bz (GSM) value in nT from source SOLAR1."""
+    """Return the most recent valid Bz value in nT from source SOLAR1."""
     data = _get_json(MAG_URL)
     for row in data:  # newest-first, so no need to reverse
         if row.get("source") != "SOLAR1":
@@ -57,10 +57,13 @@ def get_bt():
 
 
 def get_solar_wind_speed():
-    """Return the most recent valid proton speed in km/s."""
+    """Return the most recent valid proton speed in km/s from source SOLAR1."""
     data = _get_json(PLASMA_URL)
 
-    for row in reversed(data):
+    for row in data:
+        if row.get("source") != "SOLAR1":
+            continue
+
         value = row.get("proton_speed")
 
         if value is None:
