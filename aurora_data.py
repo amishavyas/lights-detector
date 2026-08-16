@@ -22,14 +22,14 @@ def _get_text(url):
 
 
 def get_bz():
-    """Return the most recent valid Bz value in nT."""
+    """Return the most recent valid Bz (GSM) value in nT from source SOLAR1."""
     data = _get_json(MAG_URL)
-    for row in reversed(data):
+    for row in data:  # newest-first, so no need to reverse
+        if row.get("source") != "SOLAR1":
+            continue
         value = row.get("bz_gsm")
-
         if value is None:
             continue
-
         try:
             return float(value)
         except (TypeError, ValueError):
