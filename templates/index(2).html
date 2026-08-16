@@ -1,0 +1,1395 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Northern Lights Detector</title>
+
+    <style>
+      :root {
+        --comic-yellow: #fff200;
+        --comic-purple: #8a00ff;
+        --comic-pink: #ff2d95;
+        --comic-cyan: #38efff;
+        --comic-orange: #ff7a00;
+        --comic-green: #63ff72;
+        --comic-ink: #07000d;
+        --comic-panel: #160025;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        background: #020314;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        overflow-x: hidden;
+        font-family: Verdana, Arial, sans-serif;
+        color: white;
+        background: radial-gradient(
+            circle at 15% 20%,
+            white 0 1px,
+            transparent 2px
+          ),
+          radial-gradient(circle at 75% 15%, #baffff 0 1px, transparent 2px),
+          radial-gradient(circle at 35% 70%, white 0 1px, transparent 2px),
+          radial-gradient(circle at 85% 60%, #ffffbb 0 1px, transparent 2px),
+          radial-gradient(
+            ellipse at 25% -5%,
+            rgba(0, 255, 145, 0.38) 0%,
+            rgba(0, 255, 145, 0.12) 25%,
+            transparent 55%
+          ),
+          radial-gradient(
+            ellipse at 70% 5%,
+            rgba(0, 200, 255, 0.28) 0%,
+            rgba(100, 0, 255, 0.12) 30%,
+            transparent 58%
+          ),
+          radial-gradient(
+            ellipse at 95% 35%,
+            rgba(255, 0, 210, 0.15),
+            transparent 45%
+          ),
+          #020314;
+        background-size: 83px 83px, 127px 127px, 173px 173px, 211px 211px,
+          100% 650px, 100% 750px, 100% 900px, auto;
+        background-attachment: fixed;
+      }
+
+      .aurora {
+        position: fixed;
+        top: -120px;
+        left: -10%;
+        width: 120%;
+        height: 450px;
+        pointer-events: none;
+        z-index: 0;
+        background: linear-gradient(
+            115deg,
+            transparent 10%,
+            rgba(0, 255, 153, 0.1) 25%,
+            rgba(0, 255, 153, 0.35) 35%,
+            rgba(0, 220, 255, 0.18) 45%,
+            transparent 58%
+          ),
+          linear-gradient(
+            75deg,
+            transparent 30%,
+            rgba(153, 0, 255, 0.22) 45%,
+            rgba(0, 255, 190, 0.2) 55%,
+            transparent 70%
+          );
+        filter: blur(30px);
+        animation: auroraMove 12s ease-in-out infinite alternate;
+      }
+
+      .space-junk {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 0;
+        overflow: hidden;
+      }
+
+      .space-junk span {
+        position: absolute;
+        color: white;
+        opacity: 0.75;
+        animation: twinkle 2.8s ease-in-out infinite alternate;
+      }
+
+      .space-junk span:nth-child(1) {
+        top: 8%;
+        left: 8%;
+      }
+      .space-junk span:nth-child(2) {
+        top: 23%;
+        left: 91%;
+        font-size: 24px;
+      }
+      .space-junk span:nth-child(3) {
+        top: 48%;
+        left: 4%;
+        color: #7fffff;
+      }
+      .space-junk span:nth-child(4) {
+        top: 67%;
+        left: 94%;
+        color: #ffff66;
+      }
+      .space-junk span:nth-child(5) {
+        top: 81%;
+        left: 12%;
+        font-size: 25px;
+      }
+      .space-junk span:nth-child(6) {
+        top: 91%;
+        left: 78%;
+        color: #ff8cff;
+      }
+      .space-junk span:nth-child(7) {
+        top: 37%;
+        left: 72%;
+      }
+
+      .beaver-field {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 0;
+        overflow: hidden;
+      }
+
+      .beaver-field span {
+        position: absolute;
+        font-size: clamp(18px, 3vw, 36px);
+        opacity: 0;
+        transform-origin: center;
+        animation: beaverEntrance 1.35s cubic-bezier(0.18, 0.89, 0.32, 1.28)
+          forwards;
+      }
+
+      .beaver-field span:nth-child(1) {
+        top: 5%;
+        left: 3%;
+        animation-delay: 0.02s;
+      }
+      .beaver-field span:nth-child(2) {
+        top: 8%;
+        left: 18%;
+        animation-delay: 0.05s;
+      }
+      .beaver-field span:nth-child(3) {
+        top: 4%;
+        left: 35%;
+        animation-delay: 0.08s;
+      }
+      .beaver-field span:nth-child(4) {
+        top: 9%;
+        right: 34%;
+        animation-delay: 0.11s;
+      }
+      .beaver-field span:nth-child(5) {
+        top: 5%;
+        right: 17%;
+        animation-delay: 0.14s;
+      }
+      .beaver-field span:nth-child(6) {
+        top: 11%;
+        right: 2%;
+        animation-delay: 0.17s;
+      }
+      .beaver-field span:nth-child(7) {
+        top: 25%;
+        left: 2%;
+        animation-delay: 0.2s;
+      }
+      .beaver-field span:nth-child(8) {
+        top: 31%;
+        left: 12%;
+        animation-delay: 0.23s;
+      }
+      .beaver-field span:nth-child(9) {
+        top: 27%;
+        right: 12%;
+        animation-delay: 0.26s;
+      }
+      .beaver-field span:nth-child(10) {
+        top: 34%;
+        right: 2%;
+        animation-delay: 0.29s;
+      }
+      .beaver-field span:nth-child(11) {
+        top: 47%;
+        left: 3%;
+        animation-delay: 0.32s;
+      }
+      .beaver-field span:nth-child(12) {
+        top: 54%;
+        left: 14%;
+        animation-delay: 0.35s;
+      }
+      .beaver-field span:nth-child(13) {
+        top: 49%;
+        right: 14%;
+        animation-delay: 0.38s;
+      }
+      .beaver-field span:nth-child(14) {
+        top: 57%;
+        right: 3%;
+        animation-delay: 0.41s;
+      }
+      .beaver-field span:nth-child(15) {
+        top: 70%;
+        left: 2%;
+        animation-delay: 0.44s;
+      }
+      .beaver-field span:nth-child(16) {
+        top: 78%;
+        left: 13%;
+        animation-delay: 0.47s;
+      }
+      .beaver-field span:nth-child(17) {
+        top: 72%;
+        right: 13%;
+        animation-delay: 0.5s;
+      }
+      .beaver-field span:nth-child(18) {
+        top: 81%;
+        right: 2%;
+        animation-delay: 0.53s;
+      }
+      .beaver-field span:nth-child(19) {
+        top: 91%;
+        left: 5%;
+        animation-delay: 0.56s;
+      }
+      .beaver-field span:nth-child(20) {
+        top: 90%;
+        left: 28%;
+        animation-delay: 0.59s;
+      }
+      .beaver-field span:nth-child(21) {
+        top: 92%;
+        right: 28%;
+        animation-delay: 0.62s;
+      }
+      .beaver-field span:nth-child(22) {
+        top: 89%;
+        right: 5%;
+        animation-delay: 0.65s;
+      }
+
+      .page {
+        position: relative;
+        z-index: 1;
+        width: min(1100px, 96%);
+        margin: 22px auto 70px;
+      }
+      .site-header {
+        text-align: center;
+        border: 5px ridge #fff200;
+        background: linear-gradient(90deg, #120018, #35104d, #120018);
+        padding: 22px 16px;
+        box-shadow: 8px 8px 0 #8a00ff, 11px 11px 0 #000000;
+      }
+
+      .site-header h2 {
+        margin: 0;
+        font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+        font-size: clamp(38px, 6.5vw, 76px);
+        line-height: 0.95;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        color: #fff200;
+        -webkit-text-stroke: 3px #000000;
+        paint-order: stroke fill;
+        text-shadow: 5px 5px 0 #8a00ff, 9px 9px 0 #000000;
+      }
+
+      .hero {
+        text-align: center;
+        padding: 58px 10px 36px;
+      }
+
+      .hero h1 {
+        margin: 0;
+        font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+        font-size: clamp(52px, 10vw, 112px);
+        line-height: 0.9;
+        color: var(--comic-yellow);
+        text-shadow: 3px 3px 0 var(--comic-pink), 6px 6px 0 var(--comic-purple);
+        transform-origin: center;
+        opacity: 0;
+        animation: marmotEntrance 1.35s cubic-bezier(0.18, 0.89, 0.32, 1.28)
+          forwards;
+      }
+
+      .prediction-box {
+        display: inline-block;
+        margin-top: 30px;
+        padding: 18px 32px;
+        border: 6px outset #ffda44;
+        background: #080808;
+        transform: rotate(-1deg);
+      }
+
+      #prediction {
+        font-family: Impact, sans-serif;
+        font-size: clamp(24px, 4.5vw, 42px);
+        line-height: 1;
+        color: #35eaff;
+        text-shadow: 3px 3px 0 #8a00ff, 5px 5px 0 #000000;
+        text-transform: uppercase;
+      }
+
+      .prediction-note {
+        margin-top: 10px;
+        color: #ffccff;
+        font-family: "Courier New", monospace;
+        font-size: 13px;
+        font-weight: bold;
+      }
+
+      .reveal {
+        opacity: 0;
+        transform: translateY(18px);
+        animation: revealRest 0.8s ease forwards;
+        animation-delay: 1.15s;
+      }
+
+      .divider {
+        overflow: hidden;
+        white-space: nowrap;
+        margin: 18px 0 24px;
+        color: #ffff00;
+        font-family: monospace;
+        font-size: 18px;
+      }
+
+      .boost-panel,
+      .space-weather {
+        border: 5px ridge #ff49d0;
+        background: rgba(19, 0, 43, 0.94);
+        box-shadow: 8px 8px 0 #004d5c;
+      }
+
+      .boost-panel {
+        padding: 16px;
+      }
+
+      .boost-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+
+      .boost-title {
+        margin: 0;
+        font-family: "Comic Sans MS", cursive;
+        font-size: clamp(32px, 5vw, 48px);
+        color: #ffff00;
+        text-shadow: 2px 2px #ff00ff;
+      }
+
+      .new-badge {
+        padding: 4px 8px;
+        color: #000;
+        background: #00ff99;
+        border: 2px outset white;
+        font-family: monospace;
+        font-size: 11px;
+        transform: rotate(5deg);
+      }
+
+      .gallery {
+        display: flex;
+        gap: 16px;
+        overflow-x: auto;
+        scroll-behavior: smooth;
+        scroll-snap-type: x mandatory;
+        scrollbar-color: #ff00aa #19002e;
+        padding: 14px 5px 20px;
+      }
+
+      .boost {
+        flex: 0 0 290px;
+        scroll-snap-align: center;
+        border: 5px outset #00ffff;
+        background: black;
+        padding: 5px;
+        transform: rotate(-1deg);
+      }
+
+      .boost:nth-child(even) {
+        transform: rotate(1.5deg);
+      }
+
+      .boost img {
+        width: 100%;
+        height: 230px;
+        display: block;
+        object-fit: cover;
+      }
+
+      .gallery-controls {
+        text-align: center;
+        margin-top: 8px;
+      }
+
+      .gallery-button {
+        width: 52px;
+        height: 40px;
+        margin: 0 5px;
+        border: 3px outset white;
+        background: #2733ff;
+        color: white;
+        font-size: 20px;
+        cursor: pointer;
+      }
+
+      .gallery-button:active {
+        border-style: inset;
+      }
+
+      .empty-gallery {
+        padding: 35px;
+        text-align: center;
+        font-family: monospace;
+        color: #ff9add;
+      }
+
+      .alarm-zone {
+        margin: 42px auto;
+        text-align: center;
+      }
+
+      #testButton {
+        padding: 18px 34px;
+        font-family: "Comic Sans MS", cursive;
+        font-size: 20px;
+        font-weight: bold;
+        background: #ffff00;
+        color: #000075;
+        border: 6px outset #ff80df;
+        cursor: pointer;
+      }
+
+      #testButton:hover {
+        background: #76ff73;
+      }
+
+      #testButton:active {
+        border-style: inset;
+      }
+
+      #testButton:disabled {
+        opacity: 0.5;
+      }
+
+      #status {
+        min-height: 25px;
+        margin-top: 12px;
+        font-family: monospace;
+        color: #7dff9f;
+      }
+
+      .space-weather {
+        margin-top: 48px;
+        border-color: #00d8ff;
+        background: rgba(3, 4, 25, 0.95);
+        box-shadow: 8px 8px 0 #ff00aa;
+      }
+
+      .terminal-bar {
+        background: linear-gradient(90deg, #09006d, #5b0070, #09006d);
+        color: #ffff70;
+        padding: 13px 16px;
+        font-family: "Comic Sans MS", "Courier New", cursive;
+        font-weight: bold;
+        font-size: 20px;
+        text-align: center;
+        border-bottom: 3px ridge #00d8ff;
+      }
+
+      .terminal-content {
+        padding: 24px;
+      }
+
+      .weather-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 18px;
+      }
+
+      .weather-item {
+        min-height: 150px;
+        border: 4px outset #00ffff;
+        padding: 20px 16px;
+        background: #12002d;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        transform: rotate(-0.5deg);
+      }
+
+      .weather-item:nth-child(even) {
+        transform: rotate(0.7deg);
+        border-color: #ff80df;
+      }
+
+      .weather-label {
+        font-family: "Comic Sans MS", cursive;
+        font-size: 15px;
+        color: #7fffff;
+        text-transform: uppercase;
+        margin-bottom: 12px;
+      }
+
+      .weather-value {
+        font-family: Impact, "Arial Narrow Bold", sans-serif;
+        font-size: clamp(32px, 5vw, 48px);
+        color: #ffff00;
+        line-height: 1;
+      }
+
+      .unit {
+        display: block;
+        margin-top: 8px;
+        font-family: "Courier New", monospace;
+        font-size: 13px;
+        color: #ff8cff;
+      }
+
+      #lastUpdated {
+        margin-top: 18px;
+        color: #a9c5ff;
+        font-family: "Courier New", monospace;
+        font-size: 12px;
+        text-align: center;
+      }
+
+      .blink {
+        animation: blink 0.8s steps(2, start) infinite;
+      }
+
+      .webcam-section {
+        margin-top: 48px;
+      }
+
+      .webcam-heading-box {
+        border: 5px ridge var(--comic-pink);
+        background: rgba(12, 0, 28, 0.88);
+        box-shadow: 6px 6px 0 var(--comic-pink), 9px 9px 0 var(--comic-ink);
+        padding: 16px;
+        margin-bottom: 22px;
+      }
+
+      .webcam-heading {
+        margin: 0;
+        text-align: left;
+        font-family: "Comic Sans MS", cursive;
+        font-size: clamp(32px, 5vw, 48px);
+        color: var(--comic-yellow);
+        text-shadow: 2px 2px 0 var(--comic-purple), 4px 4px 0 var(--comic-ink);
+      }
+
+      .webcam-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 28px;
+      }
+
+      .webcam-card {
+        position: relative;
+        padding: 12px;
+        border: 5px ridge var(--comic-cyan);
+        background: rgba(9, 0, 24, 0.94);
+        box-shadow: 6px 6px 0 var(--comic-purple), 9px 9px 0 var(--comic-ink);
+        transform: rotate(-0.6deg);
+      }
+
+      .webcam-card:nth-child(even) {
+        border-color: var(--comic-pink);
+        box-shadow: 6px 6px 0 var(--comic-orange), 9px 9px 0 var(--comic-ink);
+        transform: rotate(0.6deg);
+      }
+
+      .webcam-card::before,
+      .webcam-card::after {
+        position: absolute;
+        z-index: 2;
+        font-size: 22px;
+        line-height: 1;
+        pointer-events: none;
+      }
+
+      .webcam-card::before {
+        content: "✦ ✧";
+        top: -14px;
+        left: 14px;
+        color: var(--comic-yellow);
+        text-shadow: 2px 2px 0 var(--comic-purple);
+      }
+
+      .webcam-card::after {
+        content: "✧ ✦";
+        right: 14px;
+        bottom: -14px;
+        color: var(--comic-pink);
+        text-shadow: 2px 2px 0 var(--comic-cyan);
+      }
+
+      .webcam-title {
+        display: flex;
+        align-items: left;
+        justify-content: left;
+        gap: 8px;
+        margin: 2px 0 10px;
+        font-family: "Comic Sans MS", cursive;
+        font-size: 20px;
+        font-weight: 900;
+        color: var(--comic-green);
+        text-align: center;
+        text-shadow: 2px 2px 0 var(--comic-ink);
+      }
+
+      .webcam-video {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        overflow: hidden;
+        border: 4px outset var(--comic-purple);
+        background: #000;
+      }
+
+      .webcam-video iframe {
+        width: 100%;
+        height: 100%;
+        display: block;
+        border: 0;
+      }
+
+      .webcam-info {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 11px 4px 2px;
+        font-family: "Courier New", monospace;
+        font-size: 12px;
+        font-weight: 700;
+        color: #ffccff;
+      }
+
+      .webcam-live {
+        white-space: nowrap;
+        color: var(--comic-green);
+      }
+
+      @keyframes auroraMove {
+        0% {
+          transform: translateX(-4%) skewY(-5deg) scaleY(0.9);
+        }
+        50% {
+          transform: translateX(3%) skewY(4deg) scaleY(1.15);
+        }
+        100% {
+          transform: translateX(-1%) skewY(-2deg) scaleY(1);
+        }
+      }
+
+      @keyframes twinkle {
+        from {
+          opacity: 0.25;
+          transform: scale(0.8);
+        }
+        to {
+          opacity: 0.95;
+          transform: scale(1.15);
+        }
+      }
+
+      @keyframes marmotEntrance {
+        0% {
+          opacity: 0;
+          transform: translate(-65vw, -35vh) rotate(-540deg) scale(0.12);
+        }
+        68% {
+          opacity: 1;
+          transform: translate(3vw, 1vh) rotate(18deg) scale(1.08);
+        }
+        84% {
+          transform: translate(-1vw, 0) rotate(-7deg) scale(0.97);
+        }
+        100% {
+          opacity: 1;
+          transform: translate(0, 0) rotate(0) scale(1);
+        }
+      }
+
+      @keyframes beaverEntrance {
+        0% {
+          opacity: 0;
+          transform: translate(-35vw, -25vh) rotate(-720deg) scale(0.15);
+        }
+        65% {
+          opacity: 0.9;
+          transform: translate(2vw, 1vh) rotate(24deg) scale(1.16);
+        }
+        82% {
+          transform: translate(-1vw, 0) rotate(-12deg) scale(0.96);
+        }
+        100% {
+          opacity: 0.72;
+          transform: translate(0, 0) rotate(0deg) scale(1);
+        }
+      }
+
+      @keyframes revealRest {
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes blink {
+        50% {
+          visibility: hidden;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .hero h1,
+        .reveal,
+        .aurora,
+        .space-junk span,
+        .beaver-field span {
+          animation: none;
+          opacity: 1;
+          transform: none;
+        }
+      }
+
+      @media (max-width: 760px) {
+        .weather-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+
+        .boost {
+          flex-basis: 80vw;
+        }
+
+        .site-header {
+          box-shadow: 4px 4px 0 rgba(255, 0, 203, 0.45);
+        }
+      }
+
+      @media (max-width: 460px) {
+        .weather-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .prediction-box {
+          padding: 20px 28px;
+        }
+      }
+
+      /* Comic-book palette pass */
+      .prediction-box,
+      .boost-panel,
+      .space-weather {
+        background: rgba(12, 0, 28, 0.88);
+        border-color: var(--comic-purple);
+        box-shadow: 6px 6px 0 var(--comic-pink), 9px 9px 0 var(--comic-ink);
+      }
+
+      .prediction-box {
+        border-color: var(--comic-yellow);
+      }
+
+      .prediction-label,
+      .boost-title,
+      .space-weather h2 {
+        color: var(--comic-yellow);
+        text-shadow: 2px 2px 0 var(--comic-purple), 4px 4px 0 var(--comic-ink);
+      }
+
+      .prediction-value {
+        color: var(--comic-cyan);
+        text-shadow: 2px 2px 0 var(--comic-pink), 4px 4px 0 var(--comic-ink);
+      }
+
+      .boost-panel {
+        border-color: var(--comic-pink);
+      }
+
+      .gallery-button,
+      #testButton {
+        background: var(--comic-yellow);
+        color: var(--comic-ink);
+        border: 3px solid var(--comic-ink);
+        box-shadow: 4px 4px 0 var(--comic-purple), 7px 7px 0 var(--comic-pink);
+        font-weight: 900;
+      }
+
+      .gallery-button:hover,
+      #testButton:hover {
+        background: var(--comic-cyan);
+        transform: translate(-2px, -2px) rotate(-1deg);
+        box-shadow: 6px 6px 0 var(--comic-purple), 9px 9px 0 var(--comic-pink);
+      }
+
+      .weather-card,
+      .metric-card {
+        background: #090018;
+        border-color: var(--comic-cyan);
+        box-shadow: 4px 4px 0 var(--comic-purple), 7px 7px 0 var(--comic-ink);
+      }
+
+      .weather-card:nth-child(even),
+      .metric-card:nth-child(even) {
+        border-color: var(--comic-orange);
+        box-shadow: 4px 4px 0 var(--comic-pink), 7px 7px 0 var(--comic-ink);
+      }
+
+      .weather-card strong,
+      .metric-card strong,
+      .weather-value {
+        color: var(--comic-green);
+        text-shadow: 2px 2px 0 var(--comic-ink);
+      }
+
+      #status {
+        color: var(--comic-cyan);
+        font-weight: 800;
+        text-shadow: 2px 2px 0 var(--comic-purple);
+      }
+
+      /* Alert settings */
+      .alert-settings {
+        margin: 42px auto;
+        padding: 18px;
+        border: 5px ridge var(--comic-cyan);
+        background: rgba(12, 0, 28, 0.88);
+        box-shadow: 6px 6px 0 var(--comic-purple), 9px 9px 0 var(--comic-ink);
+      }
+
+      .alert-settings h2 {
+        margin: 0 0 18px;
+        text-align: center;
+        font-family: "Comic Sans MS", cursive;
+        color: var(--comic-yellow);
+        text-shadow: 2px 2px 0 var(--comic-purple), 4px 4px 0 var(--comic-ink);
+      }
+
+      .alert-setting-row {
+        display: grid;
+        grid-template-columns: 1fr 140px;
+        gap: 14px;
+        align-items: center;
+        margin: 12px 0;
+        font-family: "Courier New", monospace;
+        font-weight: bold;
+        color: #ffccff;
+      }
+
+      .alert-setting-row label {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .alert-setting-row input[type="number"],
+      .alert-settings input[type="password"],
+      .alert-settings input[type="text"] {
+        width: 100%;
+        padding: 10px 12px;
+        border: 3px solid var(--comic-ink);
+        background: #090018;
+        color: var(--comic-green);
+        font-family: "Courier New", monospace;
+        font-weight: bold;
+        box-shadow: 3px 3px 0 var(--comic-purple);
+      }
+
+      .alert-settings input[type="checkbox"] {
+        width: 22px;
+        height: 22px;
+        accent-color: var(--comic-green);
+      }
+
+      #saveAlertSettings {
+        display: block;
+        margin: 20px auto 0;
+        padding: 14px 28px;
+        font-family: "Comic Sans MS", cursive;
+        font-size: 17px;
+        font-weight: 900;
+        background: var(--comic-yellow);
+        color: var(--comic-ink);
+        border: 3px solid var(--comic-ink);
+        box-shadow: 4px 4px 0 var(--comic-purple), 7px 7px 0 var(--comic-pink);
+        cursor: pointer;
+      }
+
+      #saveAlertSettings:hover {
+        background: var(--comic-cyan);
+        transform: translate(-2px, -2px) rotate(-1deg);
+      }
+
+      #saveAlertSettings:disabled {
+        opacity: 0.5;
+      }
+
+      #settingsStatus {
+        min-height: 24px;
+        margin-top: 14px;
+        text-align: center;
+        font-family: monospace;
+        font-weight: 800;
+        color: var(--comic-cyan);
+        text-shadow: 2px 2px 0 var(--comic-purple);
+      }
+
+      @media (max-width: 600px) {
+        .alert-setting-row {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+
+    <style>
+      /* A little breathing room above the page */
+      body {
+        padding-top: 28px;
+      }
+
+      /* Slightly smaller main site header */
+      .site-header {
+        padding: 17px 14px;
+      }
+
+      .site-header h2 {
+        font-size: clamp(32px, 5.5vw, 64px);
+      }
+    </style>
+
+    <style>
+      .marmot-question {
+        font-size: clamp(44px, 7.5vw, 86px);
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="aurora"></div>
+
+    <div class="space-junk" aria-hidden="true">
+      <span>✦</span>
+      <span>⋆</span>
+      <span>✧</span>
+      <span>★</span>
+      <span>☄</span>
+      <span>✦</span>
+      <span>⋆</span>
+    </div>
+
+    <div class="beaver-field" aria-hidden="true">
+      <span>🦫</span>
+      <span>🦫</span>
+      <span>🦫</span>
+      <span>🦫</span>
+      <span>🦫</span>
+      <span>🦫</span>
+      <span>🦫</span>
+      <span>🦫</span>
+      <span>🦫</span>
+      <span>🦫</span>
+      <span>🦫</span>
+      <span>🦫</span>
+      <span>🦫</span>
+      <span>🦫</span>
+      <span>🦫</span>
+      <span>🦫</span>
+      <span>🦫</span>
+      <span>🦫</span>
+      <span>🦫</span>
+      <span>🦫</span>
+      <span>🦫</span>
+      <span>🦫</span>
+    </div>
+
+    <main class="page">
+      <header class="site-header reveal">
+        <h2>Northern Lights Detector</h2>
+      </header>
+
+      <section class="hero">
+        <h1>
+          IS IT TIME TO GO<br />
+          MARMOT MODE?!
+        </h1>
+
+        <div class="prediction-box reveal">
+          <div id="prediction">PREDICTIONS COMING SOON</div>
+        </div>
+      </section>
+
+      <div class="reveal">
+        <div class="divider"></div>
+
+        <section class="boost-panel">
+          <div class="boost-header">
+            <h2 class="boost-title">BOOSTS</h2>
+          </div>
+
+          {% if boosts %}
+          <div class="gallery" id="boostGallery">
+            {% for image in boosts %}
+            <div class="boost">
+              <img
+                src="{{ url_for('static', filename='boosts/' ~ image) }}"
+                alt="Marmot mode boost"
+              />
+            </div>
+            {% endfor %}
+          </div>
+
+          <div class="gallery-controls">
+            <button
+              type="button"
+              class="gallery-button"
+              id="galleryLeft"
+              aria-label="Previous boost"
+            >
+              ◀
+            </button>
+            <button
+              type="button"
+              class="gallery-button"
+              id="galleryRight"
+              aria-label="Next boost"
+            >
+              ▶
+            </button>
+          </div>
+          {% else %}
+          <div class="empty-gallery">
+            NO BOOSTS FOUND :(<br /><br />
+            put images inside <strong>static/boosts/</strong>
+          </div>
+          {% endif %}
+        </section>
+
+        <section class="alarm-zone">
+          <button id="testButton">☎ TEST PHONE ALARM ☎</button>
+          <div id="status"></div>
+        </section>
+
+
+        <section class="alert-settings">
+          <h2>🚨 AURORA ALERT SETTINGS 🚨</h2>
+
+          <div class="alert-setting-row">
+            <label>
+              <input type="checkbox" id="elevatedAlertEnabled" />
+              WARNING ALERT
+            </label>
+            <input
+              type="number"
+              id="elevatedThreshold"
+              min="0"
+              step="1"
+              aria-label="Warning threshold in gigawatts"
+            />
+          </div>
+
+          <div class="alert-setting-row">
+            <label>
+              <input type="checkbox" id="highAlertEnabled" />
+              STRONG ALERT
+            </label>
+            <input
+              type="number"
+              id="highThreshold"
+              min="0"
+              step="1"
+              aria-label="Strong threshold in gigawatts"
+            />
+          </div>
+
+          <div class="alert-setting-row">
+            <label for="settingsUpdatedBy">UPDATED BY</label>
+            <input
+              type="text"
+              id="settingsUpdatedBy"
+              placeholder="name"
+            />
+          </div>
+
+          <div class="alert-setting-row">
+            <label for="settingsPassword">PASSWORD</label>
+            <input
+              type="password"
+              id="settingsPassword"
+              autocomplete="current-password"
+            />
+          </div>
+
+          <button id="saveAlertSettings">SAVE ALERT SETTINGS</button>
+          <div id="settingsStatus"></div>
+        </section>
+
+        <section class="space-weather">
+          <div class="terminal-bar">LIVE SPACE WEATHER</div>
+
+          <div class="terminal-content">
+            <div class="weather-grid">
+              <div class="weather-item">
+                <div class="weather-label">Hemispheric Power</div>
+                <div class="weather-value">
+                  <span id="hp">--</span>
+                  <span class="unit">GW</span>
+                </div>
+              </div>
+
+              <div class="weather-item">
+                <div class="weather-label">IMF Bz</div>
+                <div class="weather-value">
+                  <span id="bz">--</span>
+                  <span class="unit">nT</span>
+                </div>
+              </div>
+
+              <div class="weather-item">
+                <div class="weather-label">Solar Wind</div>
+                <div class="weather-value">
+                  <span id="speed">--</span>
+                  <span class="unit">km/s</span>
+                </div>
+              </div>
+
+              <div class="weather-item">
+                <div class="weather-label">Proton Density</div>
+                <div class="weather-value">
+                  <span id="density">--</span>
+                  <span class="unit">p/cm³</span>
+                </div>
+              </div>
+            </div>
+
+            <div id="lastUpdated">CONNECTING TO SPACE...</div>
+          </div>
+        </section>
+      </div>
+
+      <section class="webcam-section reveal">
+        <div class="webcam-heading-box">
+          <h2 class="webcam-heading">🔭 AURORA WEBCAMS 🔭</h2>
+        </div>
+
+        <div class="webcam-grid">
+          <article class="webcam-card">
+            <div class="webcam-title">Mt Katahdin, Maine</div>
+
+            <div class="webcam-video">
+              <iframe
+                src="https://www.youtube-nocookie.com/embed/lzHbycN2CmY"
+                title="Mt Katahdin Webcam"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen
+              ></iframe>
+            </div>
+          </article>
+
+          <article class="webcam-card">
+            <div class="webcam-title">Churchill, Manitoba</div>
+
+            <div class="webcam-video">
+              <iframe
+                src="https://www.youtube-nocookie.com/embed/a0i1Kg6fROg"
+                title="Churchill Aurora Webcam"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen
+              ></iframe>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="webcam-section reveal">  
+        <div class="webcam-heading-box">
+          <h2 class="webcam-heading">GOES-19 MAGNETOMETER</h2>
+        </div>
+
+        <div class="magnetometer-frame">
+          <iframe
+            src="{{ url_for('static', filename='goes19-magnetometer.html') }}"
+            title="GOES-19 Magnetometer"
+            style="width: 100%; height: 600px; border: 0;"
+          ></iframe>
+        </div>
+      </section>
+      </script>
+    </main>
+
+    <script>
+      async function loadAuroraStatus() {
+        try {
+          const response = await fetch("/api/aurora-status");
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || "Failed to load aurora data");
+          }
+
+          document.getElementById("hp").textContent =
+            data.hemispheric_power ?? "???";
+          document.getElementById("bz").textContent = data.bz ?? "???";
+          document.getElementById("speed").textContent =
+            data.solar_wind_speed ?? "???";
+          document.getElementById("density").textContent =
+            data.proton_density ?? "???";
+
+          document.getElementById("lastUpdated").textContent =
+            "LAST UPDATE: " + new Date().toLocaleTimeString();
+        } catch (error) {
+          console.error(error);
+          document.getElementById("lastUpdated").textContent =
+            "!!! SPACE DATA CONNECTION FAILED !!!";
+        }
+      }
+
+      const gallery = document.getElementById("boostGallery");
+      const leftButton = document.getElementById("galleryLeft");
+      const rightButton = document.getElementById("galleryRight");
+
+      if (gallery && leftButton && rightButton) {
+        leftButton.addEventListener("click", () => {
+          gallery.scrollBy({ left: -320, behavior: "smooth" });
+        });
+
+        rightButton.addEventListener("click", () => {
+          gallery.scrollBy({ left: 320, behavior: "smooth" });
+        });
+      }
+
+      const button = document.getElementById("testButton");
+      const status = document.getElementById("status");
+
+      button.addEventListener("click", async () => {
+        button.disabled = true;
+        status.textContent = "MARMOT NOTIFYING...";
+
+        try {
+          const response = await fetch("/api/test-alarm", {
+            method: "POST",
+          });
+
+          const result = await response.json();
+
+          status.textContent = result.success
+            ? "✓ MARMOT SIGNAL SENT"
+            : "✗ " + result.error;
+        } catch (error) {
+          status.textContent = "✗ THE MARMOTS ARE OFFLINE";
+        } finally {
+          button.disabled = false;
+        }
+      });
+
+      loadAuroraStatus();
+      loadAlertSettings();
+      setInterval(loadAuroraStatus, 5 * 60 * 1000);
+
+      async function loadAlertSettings() {
+        try {
+          const response = await fetch("/api/settings");
+          const settings = await response.json();
+
+          document.getElementById("elevatedAlertEnabled").checked =
+            settings.elevated_alert_enabled;
+          document.getElementById("highAlertEnabled").checked =
+            settings.high_alert_enabled;
+          document.getElementById("elevatedThreshold").value =
+            settings.elevated_threshold;
+          document.getElementById("highThreshold").value =
+            settings.high_threshold;
+        } catch (error) {
+          document.getElementById("settingsStatus").textContent =
+            "✗ COULD NOT LOAD ALERT SETTINGS";
+        }
+      }
+
+      const saveAlertSettingsButton = document.getElementById("saveAlertSettings");
+      const settingsStatus = document.getElementById("settingsStatus");
+
+      saveAlertSettingsButton.addEventListener("click", async () => {
+        saveAlertSettingsButton.disabled = true;
+        settingsStatus.textContent = "SAVING...";
+
+        const payload = {
+          elevated_alert_enabled: document.getElementById("elevatedAlertEnabled").checked,
+          high_alert_enabled: document.getElementById("highAlertEnabled").checked,
+          elevated_threshold: Number(document.getElementById("elevatedThreshold").value),
+          high_threshold: Number(document.getElementById("highThreshold").value),
+          updated_by: document.getElementById("settingsUpdatedBy").value.trim(),
+          password: document.getElementById("settingsPassword").value,
+        };
+
+        try {
+          const response = await fetch("/api/settings", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          });
+
+          const result = await response.json();
+
+          if (!response.ok) {
+            throw new Error(result.error || "Failed to save settings");
+          }
+
+          settingsStatus.textContent = "✓ ALERT SETTINGS SAVED";
+          document.getElementById("settingsPassword").value = "";
+        } catch (error) {
+          settingsStatus.textContent = "✗ " + error.message;
+        } finally {
+          saveAlertSettingsButton.disabled = false;
+        }
+      });
+
+    </script>
+
+    <script>
+      function randomizeBeavers() {
+        const beavers = document.querySelectorAll(".beaver");
+
+        if (!beavers.length) return;
+
+        const zoneHeight = 100 / beavers.length;
+
+        beavers.forEach((beaver, index) => {
+          // Each beaver gets its own vertical zone so they stay spread out.
+          const zoneStart = index * zoneHeight;
+          const top =
+            zoneStart + 2 + Math.random() * Math.max(zoneHeight - 7, 2);
+
+          // Randomly choose the left or right edge.
+          const onLeft = Math.random() < 0.5;
+          const edgePosition = 2 + Math.random() * 10;
+
+          if (onLeft) {
+            beaver.style.left = `${edgePosition}%`;
+            beaver.style.right = "auto";
+          } else {
+            beaver.style.right = `${edgePosition}%`;
+            beaver.style.left = "auto";
+          }
+
+          // Give each beaver a noticeably different size.
+          const size = 10 + Math.random() * 12;
+          beaver.style.fontSize = `${size}px`;
+
+          // Stagger the spinning entrance slightly.
+          const delay = Math.random() * 0.7;
+          beaver.style.setProperty("--delay", `${delay}s`);
+
+          beaver.style.top = `${top}%`;
+        });
+      }
+
+      randomizeBeavers();
+    </script>
+  </body>
+</html>
