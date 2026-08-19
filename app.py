@@ -33,7 +33,7 @@ def index():
 
     boosts.sort()
 
-    return render_template("index(3).html", boosts=boosts)
+    return render_template("index.html", boosts=boosts)
 
 
 @app.route("/api/test-alarm", methods=["POST"])

@@ -852,6 +852,149 @@
         font-weight: 800;
         text-shadow: 2px 2px 0 var(--comic-purple);
       }
+
+      /* Alert settings */
+      .alert-settings {
+        margin: 42px auto;
+        padding: 22px;
+        border: 5px ridge var(--comic-cyan);
+        background: rgba(12, 0, 28, 0.88);
+        box-shadow: 6px 6px 0 var(--comic-purple), 9px 9px 0 var(--comic-ink);
+      }
+
+      .alert-settings h2 {
+        margin: 0 0 22px;
+        text-align: center;
+        font-family: "Comic Sans MS", cursive;
+        color: var(--comic-yellow);
+        text-shadow: 2px 2px 0 var(--comic-purple), 4px 4px 0 var(--comic-ink);
+      }
+
+      .alert-settings-inner {
+        width: min(620px, 100%);
+        margin: 0 auto;
+      }
+
+      .alert-setting-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 120px;
+        gap: 18px;
+        align-items: center;
+        margin: 14px 0;
+        font-family: "Courier New", monospace;
+        font-weight: bold;
+        color: #ffccff;
+      }
+
+      .alert-toggle-label {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .alert-state {
+        display: inline-block;
+        min-width: 48px;
+        padding: 3px 7px;
+        border: 2px solid var(--comic-ink);
+        background: #2a003f;
+        color: #ff8cff;
+        text-align: center;
+        font-size: 12px;
+        box-shadow: 2px 2px 0 var(--comic-purple);
+      }
+
+      .alert-state.on {
+        background: var(--comic-green);
+        color: var(--comic-ink);
+      }
+
+      .alert-field-row {
+        display: grid;
+        grid-template-columns: 150px minmax(0, 1fr);
+        gap: 18px;
+        align-items: center;
+        margin: 14px 0;
+        font-family: "Courier New", monospace;
+        font-weight: bold;
+        color: #ffccff;
+      }
+
+      .alert-setting-row input[type="number"],
+      .alert-settings input[type="password"],
+      .alert-settings input[type="text"],
+      .alert-settings input[type="time"] {
+        width: 100%;
+        padding: 10px 12px;
+        border: 3px solid var(--comic-ink);
+        background: #090018;
+        color: var(--comic-green);
+        font-family: "Courier New", monospace;
+        font-weight: bold;
+        box-shadow: 3px 3px 0 var(--comic-purple);
+      }
+
+      .alert-settings input[type="checkbox"] {
+        width: 22px;
+        height: 22px;
+        accent-color: var(--comic-green);
+      }
+
+      .alert-settings input:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+
+      .settings-lock-note {
+        margin: 8px 0 4px;
+        text-align: center;
+        font-family: "Courier New", monospace;
+        font-size: 12px;
+        font-weight: bold;
+        color: var(--comic-cyan);
+      }
+
+      #saveAlertSettings {
+        display: block;
+        margin: 22px auto 0;
+        padding: 14px 28px;
+        font-family: "Comic Sans MS", cursive;
+        font-size: 17px;
+        font-weight: 900;
+        background: var(--comic-yellow);
+        color: var(--comic-ink);
+        border: 3px solid var(--comic-ink);
+        box-shadow: 4px 4px 0 var(--comic-purple), 7px 7px 0 var(--comic-pink);
+        cursor: pointer;
+      }
+
+      #saveAlertSettings:hover:not(:disabled) {
+        background: var(--comic-cyan);
+        transform: translate(-2px, -2px) rotate(-1deg);
+      }
+
+      #saveAlertSettings:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+
+      #settingsStatus {
+        min-height: 24px;
+        margin-top: 14px;
+        text-align: center;
+        font-family: monospace;
+        font-weight: 800;
+        color: var(--comic-cyan);
+        text-shadow: 2px 2px 0 var(--comic-purple);
+      }
+
+      @media (max-width: 600px) {
+        .alert-setting-row,
+        .alert-field-row {
+          grid-template-columns: 1fr;
+          gap: 8px;
+        }
+      }
     </style>
 
     <style>
@@ -980,6 +1123,98 @@
         <section class="alarm-zone">
           <button id="testButton">☎ TEST PHONE ALARM ☎</button>
           <div id="status"></div>
+        </section>
+
+
+        <section class="alert-settings">
+          <h2>🚨 AURORA ALERT SETTINGS 🚨</h2>
+
+          <div class="alert-settings-inner">
+            <div class="alert-setting-row">
+              <label class="alert-toggle-label">
+                <input type="checkbox" id="elevatedAlertEnabled" disabled />
+                WARNING ALERT
+                <span class="alert-state" id="elevatedAlertState">--</span>
+              </label>
+              <input
+                type="number"
+                id="elevatedThreshold"
+                min="0"
+                step="1"
+                aria-label="Warning threshold in gigawatts"
+                disabled
+              />
+            </div>
+
+            <div class="alert-setting-row">
+              <label class="alert-toggle-label">
+                <input type="checkbox" id="highAlertEnabled" disabled />
+                STRONG ALERT
+                <span class="alert-state" id="highAlertState">--</span>
+              </label>
+              <input
+                type="number"
+                id="highThreshold"
+                min="0"
+                step="1"
+                aria-label="Strong threshold in gigawatts"
+                disabled
+              />
+            </div>
+
+            <div class="alert-field-row">
+              <label for="alertStartTime">ALERT START TIME</label>
+              <input
+                type="time"
+                id="alertStartTime"
+                value="20:00"
+                aria-label="Aurora alert start time in Eastern Time"
+                disabled
+              />
+            </div>
+
+            <div class="alert-field-row">
+              <label for="alertStopTime">ALERT STOP TIME</label>
+              <input
+                type="time"
+                id="alertStopTime"
+                value="04:00"
+                aria-label="Aurora alert stop time in Eastern Time"
+                disabled
+              />
+            </div>
+
+            <div class="settings-lock-note">
+              🕒 ALERT WINDOW USES EASTERN TIME (AMERICA/NEW_YORK)
+            </div>
+
+            <div class="alert-field-row">
+              <label for="settingsUpdatedBy">UPDATED BY</label>
+              <input
+                type="text"
+                id="settingsUpdatedBy"
+                placeholder="name"
+                disabled
+              />
+            </div>
+
+            <div class="alert-field-row">
+              <label for="settingsPassword">PASSWORD</label>
+              <input
+                type="password"
+                id="settingsPassword"
+                autocomplete="current-password"
+                placeholder="enter password to edit"
+              />
+            </div>
+
+            <div class="settings-lock-note" id="settingsLockNote">
+              🔒 ENTER PASSWORD TO UNLOCK CHANGES
+            </div>
+
+            <button id="saveAlertSettings" disabled>SAVE ALERT SETTINGS</button>
+            <div id="settingsStatus"></div>
+          </div>
         </section>
 
         <section class="space-weather">
@@ -1141,7 +1376,112 @@
       });
 
       loadAuroraStatus();
+      loadAlertSettings();
       setInterval(loadAuroraStatus, 5 * 60 * 1000);
+
+      const elevatedAlertEnabled = document.getElementById("elevatedAlertEnabled");
+      const highAlertEnabled = document.getElementById("highAlertEnabled");
+      const elevatedThreshold = document.getElementById("elevatedThreshold");
+      const highThreshold = document.getElementById("highThreshold");
+      const alertStartTime = document.getElementById("alertStartTime");
+      const alertStopTime = document.getElementById("alertStopTime");
+      const settingsUpdatedBy = document.getElementById("settingsUpdatedBy");
+      const settingsPassword = document.getElementById("settingsPassword");
+      const saveAlertSettingsButton = document.getElementById("saveAlertSettings");
+      const settingsStatus = document.getElementById("settingsStatus");
+      const settingsLockNote = document.getElementById("settingsLockNote");
+
+      function updateAlertState() {
+        const elevatedState = document.getElementById("elevatedAlertState");
+        const highState = document.getElementById("highAlertState");
+
+        elevatedState.textContent = elevatedAlertEnabled.checked ? "ON" : "OFF";
+        elevatedState.classList.toggle("on", elevatedAlertEnabled.checked);
+
+        highState.textContent = highAlertEnabled.checked ? "ON" : "OFF";
+        highState.classList.toggle("on", highAlertEnabled.checked);
+      }
+
+      function updateSettingsLock() {
+        const unlocked = settingsPassword.value.length > 0;
+
+        elevatedAlertEnabled.disabled = !unlocked;
+        highAlertEnabled.disabled = !unlocked;
+        elevatedThreshold.disabled = !unlocked;
+        highThreshold.disabled = !unlocked;
+        alertStartTime.disabled = !unlocked;
+        alertStopTime.disabled = !unlocked;
+        settingsUpdatedBy.disabled = !unlocked;
+        saveAlertSettingsButton.disabled = !unlocked;
+
+        settingsLockNote.textContent = unlocked
+          ? "🔓 SETTINGS UNLOCKED — PASSWORD WILL BE CHECKED WHEN SAVED"
+          : "🔒 ENTER PASSWORD TO UNLOCK CHANGES";
+      }
+
+      async function loadAlertSettings() {
+        try {
+          const response = await fetch("/api/settings");
+          const settings = await response.json();
+
+          elevatedAlertEnabled.checked = settings.elevated_alert_enabled;
+          highAlertEnabled.checked = settings.high_alert_enabled;
+          elevatedThreshold.value = settings.elevated_threshold;
+          highThreshold.value = settings.high_threshold;
+          alertStartTime.value = settings.alert_start_time || "20:00";
+          alertStopTime.value = settings.alert_stop_time || "04:00";
+          settingsUpdatedBy.value = settings.updated_by || "";
+
+          updateAlertState();
+        } catch (error) {
+          settingsStatus.textContent = "✗ COULD NOT LOAD ALERT SETTINGS";
+        }
+      }
+
+      settingsPassword.addEventListener("input", updateSettingsLock);
+      elevatedAlertEnabled.addEventListener("change", updateAlertState);
+      highAlertEnabled.addEventListener("change", updateAlertState);
+
+      saveAlertSettingsButton.addEventListener("click", async () => {
+        saveAlertSettingsButton.disabled = true;
+        settingsStatus.textContent = "SAVING...";
+
+        const payload = {
+          elevated_alert_enabled: elevatedAlertEnabled.checked,
+          high_alert_enabled: highAlertEnabled.checked,
+          elevated_threshold: Number(elevatedThreshold.value),
+          high_threshold: Number(highThreshold.value),
+          alert_start_time: alertStartTime.value,
+          alert_stop_time: alertStopTime.value,
+          updated_by: settingsUpdatedBy.value.trim(),
+          password: settingsPassword.value,
+        };
+
+        try {
+          const response = await fetch("/api/settings", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          });
+
+          const result = await response.json();
+
+          if (!response.ok) {
+            throw new Error(result.error || "Failed to save settings");
+          }
+
+          settingsStatus.textContent = "✓ ALERT SETTINGS SAVED";
+          settingsPassword.value = "";
+          updateSettingsLock();
+          updateAlertState();
+        } catch (error) {
+          settingsStatus.textContent = "✗ " + error.message;
+          updateSettingsLock();
+        }
+      });
+
     </script>
 
     <script>
