@@ -39,7 +39,8 @@ def index():
 @app.route("/api/test-alarm", methods=["POST"])
 def test_alarm():
     try:
-        send_alarm()
+        send_alarm(message="TESTING WEE WOO", title="MANUAL TEST ALARM")
+
         return jsonify({
             "success": True,
             "message": "Notification sent",

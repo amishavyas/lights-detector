@@ -30,100 +30,74 @@ def hemispheric_power_above_threshold(
     return hp, hp >= threshold
 
 
-
-MIN_BZ_SAMPLES = 5
 BZ_THRESHOLD = -5.0
-BZ_TREND_WINDOW_MINUTES = 5
+BZ_SUSTAINED_MINUTES = 15
+MIN_BZ_SAMPLES = 15
 
 # Store (timestamp, bz)
 bz_history = deque()
 
-def evaluate_bz_state_derivative(
-    bz,
-    minutes=BZ_TREND_WINDOW_MINUTES,
-    derivative_threshold=0.5,
+
+def get_bz():
+    """Return the most recent valid Bz value in nT from source SOLAR1."""
+    data = _get_json(MAG_URL)
+
+    for row in data:  # newest-first
+        if row.get("source") != "SOLAR1":
+            continue
+
+        value = row.get("bz_gsm")
+        if value is None:
+            continue
+
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            continue
+
+    return None
+
+
+def evaluate_sustained_negative_bz(
+    threshold=BZ_THRESHOLD,
+    minutes=BZ_SUSTAINED_MINUTES,
     min_samples=MIN_BZ_SAMPLES,
 ):
     """
-    Evaluate the mean Bz rate of change over BZ_DURATION_MINUTES.
-
-    Rate is measured in nT/min.
-
-    Returns:
-        "INSUFFICIENT_DATA"
-        "TRENDING_NEGATIVE"
-        "STABLE"
-        "TRENDING_POSITIVE"
+    Return True when Bz has stayed <= threshold
+    for the entire requested duration.
     """
 
+    bz = get_bz()
+
     if bz is None:
-        return "INSUFFICIENT_DATA"
+        return False
 
     now = time.time()
     cutoff = now - (minutes * 60)
 
     bz_history.append((now, bz))
 
-    # Keep one sample immediately before the start
-    # of the requested duration.
+    # Keep one sample immediately before the cutoff.
     while (
         len(bz_history) > 1
         and bz_history[1][0] <= cutoff
     ):
         bz_history.popleft()
 
+    # Need enough samples.
     if len(bz_history) < min_samples:
-        return "INSUFFICIENT_DATA"
+        return False
 
-    # Make sure history covers the full duration.
+    # Need history covering the full 15-minute window.
     if bz_history[0][0] > cutoff:
-        return "INSUFFICIENT_DATA"
+        return False
 
-    start_time, start_bz = bz_history[0]
-    end_time, end_bz = bz_history[-1]
+    # Every reading in the window must be <= -5 nT.
+    for timestamp, value in bz_history:
+        if value > threshold:
+            return False
 
-    elapsed_minutes = (end_time - start_time) / 60
-
-    if elapsed_minutes <= 0:
-        return "INSUFFICIENT_DATA"
-
-    # Mean rate of change over the entire duration.
-    mean_rate = (end_bz - start_bz) / elapsed_minutes
-
-    print(f"Bz mean rate: {mean_rate:.2f} nT/min")
-
-    if mean_rate <= -derivative_threshold:
-        return "TRENDING_NEGATIVE"
-
-    if mean_rate >= derivative_threshold:
-        return "TRENDING_POSITIVE"
-
-    return "STABLE"
+    return True
 
 
-if __name__ == "__main__":
-    bz_history.clear()
-
-    test_values = [
-        -2.0,
-        -3.0,
-        -4.0,
-        -5.0,
-        -6.0,
-        -7.0,
-        -8.0,
-        -9.0,
-        -10,
-        -11,
-        -130
-    ]
-
-    for bz in test_values:
-        state = evaluate_bz_state_derivative(
-            bz,
-            minutes=5 / 60,   # 5 seconds
-            min_samples=5,
-        )
-
-        print(f"Bz: {bz:5.1f} | State: {state}")
-        time.sleep(1)
