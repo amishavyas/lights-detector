@@ -16,12 +16,19 @@ NTFY_URL = f"https://ntfy.sh/{NTFY_TOPIC}"
 CHECK_INTERVAL_SECONDS = 60 * 5
 ALERT_COOLDOWN_SECONDS = 60 * 60 * 2
 
+# Local fallback/default HP thresholds.
+# Firebase can override these.
 HP_WARNING_THRESHOLD = 40
 HP_HIGH_THRESHOLD = 50
 
+# Bz settings stay local for now.
 BZ_THRESHOLD = -1.0
 BZ_SUSTAINED_MINUTES = 15
 BZ_MIN_SAMPLES = 4
+
+# Alert window fallback if Firebase does not have these yet.
+DEFAULT_ALERT_START_TIME = "20:00"
+DEFAULT_ALERT_STOP_TIME = "04:00"
 
 EASTERN_TZ = ZoneInfo("America/New_York")
 
@@ -34,7 +41,12 @@ last_alert_times = {
 }
 
 
-def send_alarm(message, title, priority=5, tags="rotating_light"):
+def send_alarm(
+    message,
+    title,
+    priority=5,
+    tags="rotating_light",
+):
     response = requests.put(
         NTFY_URL,
         data=message.encode("utf-8"),
@@ -59,18 +71,32 @@ def cooldown_expired(alert_level, now):
 
 
 def alerts_allowed_now(settings):
-    start = settings.get("alert_start_time", "20:00")
-    stop = settings.get("alert_stop_time", "04:00")
+    start = settings.get(
+        "alert_start_time",
+        DEFAULT_ALERT_START_TIME,
+    )
 
-    current = datetime.now(EASTERN_TZ).strftime("%H:%M")
+    stop = settings.get(
+        "alert_stop_time",
+        DEFAULT_ALERT_STOP_TIME,
+    )
 
+    current = datetime.now(
+        EASTERN_TZ
+    ).strftime("%H:%M")
+
+    # Window crosses midnight, for example:
+    # 20:00 -> 04:00
     if start > stop:
-        return current >= start or current < stop
+        return (
+            current >= start
+            or current < stop
+        )
 
     return start <= current < stop
 
 
-def get_thresholds(settings):
+def get_hp_thresholds(settings):
     elevated = float(
         settings.get(
             "elevated_threshold",
@@ -107,7 +133,8 @@ def sustained_negative_bz(
 
     bz_history.append((now, bz))
 
-    # Keep one sample immediately before the cutoff.
+    # Keep one sample immediately before the cutoff
+    # so we can verify the full requested duration.
     while (
         len(bz_history) > 1
         and bz_history[1][0] <= cutoff
@@ -117,7 +144,8 @@ def sustained_negative_bz(
     if len(bz_history) < min_samples:
         return False
 
-    # History must cover the full 15-minute window.
+    # Oldest retained sample must reach at least
+    # as far back as the cutoff.
     if bz_history[0][0] > cutoff:
         return False
 
@@ -133,13 +161,21 @@ def check_bz_alert(
     bz_sustained,
     now,
 ):
-    if not settings.get("bz_alert_enabled", True):
+    # Firebase may not have this key yet.
+    # Default to enabled.
+    if not settings.get(
+        "bz_alert_enabled",
+        True,
+    ):
         return
 
     if not bz_sustained:
         return
 
-    if not cooldown_expired("bz_sustained", now):
+    if not cooldown_expired(
+        "bz_sustained",
+        now,
+    ):
         return
 
     send_alarm(
@@ -162,8 +198,20 @@ def check_hp_alerts(
     high_threshold,
     now,
 ):
+    high_enabled = settings.get(
+        "high_alert_enabled",
+        True,
+    )
+
+    elevated_enabled = settings.get(
+        "elevated_alert_enabled",
+        True,
+    )
+
+    # Check high first so one reading does not
+    # send both high and elevated alerts.
     if (
-        settings.get("high_alert_enabled", True)
+        high_enabled
         and hp >= high_threshold
         and cooldown_expired("high", now)
     ):
@@ -171,7 +219,9 @@ def check_hp_alerts(
             title="STRONG AURORA ACTIVITY",
             message=(
                 f"Hemispheric Power has reached "
-                f"{hp:.1f} GW."
+                f"{hp:.1f} GW. "
+                f"High threshold: "
+                f"{high_threshold:.1f} GW."
             ),
         )
 
@@ -179,7 +229,7 @@ def check_hp_alerts(
         return
 
     if (
-        settings.get("elevated_alert_enabled", True)
+        elevated_enabled
         and hp >= elevated_threshold
         and cooldown_expired("elevated", now)
     ):
@@ -187,7 +237,9 @@ def check_hp_alerts(
             title="AURORA ACTIVITY ELEVATED",
             message=(
                 f"Hemispheric Power has reached "
-                f"{hp:.1f} GW."
+                f"{hp:.1f} GW. "
+                f"Elevated threshold: "
+                f"{elevated_threshold:.1f} GW."
             ),
         )
 
@@ -198,19 +250,23 @@ def print_status(
     hp,
     bz,
     bz_sustained,
-    alerts_on,
+    alert_window_open,
+    elevated_threshold,
+    high_threshold,
 ):
-    bz_display = (
-        f"{bz:.1f}"
-        if bz is not None
-        else "N/A"
-    )
+    if bz is None:
+        bz_display = "N/A"
+    else:
+        bz_display = f"{bz:.1f}"
 
     print(
         f"HP: {hp:.1f} GW | "
+        f"Elevated: {elevated_threshold:.1f} | "
+        f"High: {high_threshold:.1f} | "
         f"Bz: {bz_display} nT | "
         f"Bz sustained: {bz_sustained} | "
-        f"Alerts: {'ON' if alerts_on else 'OFF'}"
+        f"Alert window: "
+        f"{'OPEN' if alert_window_open else 'CLOSED'}"
     )
 
 
@@ -220,8 +276,8 @@ def monitor_aurora():
             settings = load_settings()
             now = time.time()
 
-            elevated_threshold, high_threshold = get_thresholds(
-                settings
+            elevated_threshold, high_threshold = (
+                get_hp_thresholds(settings)
             )
 
             hp, _ = hemispheric_power_above_threshold(
@@ -229,39 +285,48 @@ def monitor_aurora():
             )
 
             hp = float(hp)
+
             bz = get_bz()
 
             bz_sustained = sustained_negative_bz(
-                bz,
-                now,
+                bz=bz,
+                now=now,
             )
 
-            alerts_on = alerts_allowed_now(settings)
+            alert_window_open = alerts_allowed_now(
+                settings
+            )
 
             print_status(
-                hp,
-                bz,
-                bz_sustained,
-                alerts_on,
+                hp=hp,
+                bz=bz,
+                bz_sustained=bz_sustained,
+                alert_window_open=alert_window_open,
+                elevated_threshold=elevated_threshold,
+                high_threshold=high_threshold,
             )
 
-            if alerts_on:
+            if alert_window_open:
                 check_bz_alert(
-                    settings,
-                    bz,
-                    bz_sustained,
-                    now,
+                    settings=settings,
+                    bz=bz,
+                    bz_sustained=bz_sustained,
+                    now=now,
                 )
 
                 check_hp_alerts(
-                    settings,
-                    hp,
-                    elevated_threshold,
-                    high_threshold,
-                    now,
+                    settings=settings,
+                    hp=hp,
+                    elevated_threshold=elevated_threshold,
+                    high_threshold=high_threshold,
+                    now=now,
                 )
 
         except Exception as exc:
-            print(f"Aurora monitor error: {exc}")
+            print(
+                f"Aurora monitor error: {exc}"
+            )
 
-        time.sleep(CHECK_INTERVAL_SECONDS)
+        time.sleep(
+            CHECK_INTERVAL_SECONDS
+        )
