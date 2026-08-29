@@ -2,10 +2,9 @@ import time
 from collections import deque
 from datetime import datetime
 from zoneinfo import ZoneInfo
-
 import requests
-
-from analyze_aurora import hemispheric_power_above_threshold
+from analyze_aurora import (
+    hemispheric_power_above_threshold, get_coupling_function)
 from settings_store import load_settings
 from aurora_data import get_bz
 
@@ -14,7 +13,7 @@ NTFY_TOPIC = "WEE_WOO"
 NTFY_URL = f"https://ntfy.sh/{NTFY_TOPIC}"
 
 CHECK_INTERVAL_SECONDS = 60 * 5
-ALERT_COOLDOWN_SECONDS = 60 * 60 * 2
+ALERT_COOLDOWN_SECONDS = 60 * 30
 
 # Local fallback/default HP thresholds.
 # Firebase can override these.
@@ -22,8 +21,8 @@ HP_WARNING_THRESHOLD = 40
 HP_HIGH_THRESHOLD = 50
 
 # Bz settings stay local for now.
-BZ_THRESHOLD = -1.0
-BZ_SUSTAINED_MINUTES = 15
+BZ_THRESHOLD = -0.1
+BZ_SUSTAINED_MINUTES = 30
 BZ_MIN_SAMPLES = 4
 
 # Alert window fallback if Firebase does not have these yet.
@@ -253,6 +252,7 @@ def print_status(
     alert_window_open,
     elevated_threshold,
     high_threshold,
+    coupling
 ):
     if bz is None:
         bz_display = "N/A"
@@ -265,6 +265,7 @@ def print_status(
         f"High: {high_threshold:.1f} | "
         f"Bz: {bz_display} nT | "
         f"Bz sustained: {bz_sustained} | "
+        f"Coupling: {coupling} | "
         f"Alert window: "
         f"{'OPEN' if alert_window_open else 'CLOSED'}"
     )
@@ -288,6 +289,8 @@ def monitor_aurora():
 
             bz = get_bz()
 
+            coupling_val = get_coupling_function()
+
             bz_sustained = sustained_negative_bz(
                 bz=bz,
                 now=now,
@@ -304,6 +307,7 @@ def monitor_aurora():
                 alert_window_open=alert_window_open,
                 elevated_threshold=elevated_threshold,
                 high_threshold=high_threshold,
+                coupling=coupling_val
             )
 
             if alert_window_open:

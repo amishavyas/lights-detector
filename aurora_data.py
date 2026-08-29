@@ -1,4 +1,5 @@
 import requests
+import math
 
 MAG_URL = "https://services.swpc.noaa.gov/json/rtsw/rtsw_mag_1m.json"
 PLASMA_URL = "https://services.swpc.noaa.gov/json/rtsw/rtsw_wind_1m.json"
@@ -28,6 +29,23 @@ def get_bz():
         if row.get("source") != "SOLAR1":
             continue
         value = row.get("bz_gsm")
+        if value is None:
+            continue
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            continue
+
+    return None
+
+
+def get_by():
+    """Return the most recent valid Bz value in nT from source SOLAR1."""
+    data = _get_json(MAG_URL)
+    for row in data:  # newest-first, so no need to reverse
+        if row.get("source") != "SOLAR1":
+            continue
+        value = row.get("by_gsm")
         if value is None:
             continue
         try:
@@ -130,3 +148,31 @@ def get_hemispheric_power(hemisphere="north"):
         return latest[-2]
 
     return latest[-1]
+
+
+def get_imf_clock_angle():
+    """
+    Calculate the IMF clock angle in radians.
+
+    Fetches By and Bz directly from aurora_data.
+
+    Returns an angle from 0 to pi:
+        0       = fully northward IMF
+        pi / 2  = east/west IMF
+        pi      = fully southward IMF
+    """
+    by = get_by()
+    bz = get_bz()
+
+    return math.atan2(abs(by), bz)
+
+
+def get_transverse_bt():
+    """Return transverse IMF magnitude in nT."""
+    by = get_by()
+    bz = get_bz()
+
+    if by is None or bz is None:
+        return None
+
+    return math.sqrt(by**2 + bz**2)

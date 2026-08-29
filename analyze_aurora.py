@@ -2,17 +2,21 @@ import numpy as np
 from scipy.stats import linregress
 import time
 from collections import deque
-
+import math
 from aurora_data import (
     get_hemispheric_power,
     get_bz,
     get_bt,
+    get_by,
     get_solar_wind_speed,
     get_proton_density,
+    get_transverse_bt,
+    get_imf_clock_angle
 )
 
 
 HP_THRESHOLD = 30
+
 
 def hemispheric_power_above_threshold(
     threshold=HP_THRESHOLD,
@@ -36,26 +40,6 @@ MIN_BZ_SAMPLES = 15
 
 # Store (timestamp, bz)
 bz_history = deque()
-
-
-def get_bz():
-    """Return the most recent valid Bz value in nT from source SOLAR1."""
-    data = _get_json(MAG_URL)
-
-    for row in data:  # newest-first
-        if row.get("source") != "SOLAR1":
-            continue
-
-        value = row.get("bz_gsm")
-        if value is None:
-            continue
-
-        try:
-            return float(value)
-        except (TypeError, ValueError):
-            continue
-
-    return None
 
 
 def evaluate_sustained_negative_bz(
@@ -101,3 +85,15 @@ def evaluate_sustained_negative_bz(
     return True
 
 
+def get_coupling_function():
+    v = get_solar_wind_speed()
+    bt = get_transverse_bt()
+    theta_c = get_imf_clock_angle()
+
+    coupling = (
+        v ** (4 / 3)
+        * bt ** (2 / 3)
+        * math.sin(theta_c / 2) ** (8 / 3)
+    )
+
+    return coupling
