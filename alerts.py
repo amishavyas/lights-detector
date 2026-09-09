@@ -196,6 +196,7 @@ def check_hp_alerts(
     elevated_threshold,
     high_threshold,
     now,
+    coupling_val
 ):
     high_enabled = settings.get(
         "high_alert_enabled",
@@ -221,6 +222,7 @@ def check_hp_alerts(
                 f"{hp:.1f} GW. "
                 f"High threshold: "
                 f"{high_threshold:.1f} GW."
+                f"Coupling: {coupling_val}"
             ),
         )
 
@@ -311,12 +313,12 @@ def monitor_aurora():
             )
 
             if alert_window_open:
-                check_bz_alert(
-                    settings=settings,
-                    bz=bz,
-                    bz_sustained=bz_sustained,
-                    now=now,
-                )
+                # check_bz_alert(
+                #     settings=settings,
+                #     bz=bz,
+                #     bz_sustained=bz_sustained,
+                #     now=now,
+                # )
 
                 check_hp_alerts(
                     settings=settings,
@@ -324,6 +326,7 @@ def monitor_aurora():
                     elevated_threshold=elevated_threshold,
                     high_threshold=high_threshold,
                     now=now,
+                    coupling_val=coupling_val
                 )
 
         except Exception as exc:
